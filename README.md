@@ -48,10 +48,13 @@ The report sections are:
   - each mod's tick handlers;
   - packages anywhere in the stack, which is roughly "which mod";
   - the exact methods running.
-- **ComputerCraft thread:** if the server runs
-  [ComputerCraft-1.63-fixes](https://github.com/landonracer109/ComputerCraft-1.63-fixes) with
-  `-Dcc.profileSeconds=N`, its report on the ComputerCraft thread is included. That shows how busy
-  it is and which computers use it.
+- **ComputerCraft:** with the normal ComputerCraft jar, CC's work on the server thread (turtles,
+  monitors, computer blocks) shows up like any other block entity, but CC's own Lua thread isn't
+  covered. That thread doesn't affect TPS: when it's overloaded, computers get slow while the
+  server runs fine. The next release of
+  [ComputerCraft-1.63-fixes](https://github.com/landonracer109/ComputerCraft-1.63-fixes), run with
+  `-Dcc.profileSeconds=N`, adds a report on that thread, which is then included: how busy it is
+  and which computers use it.
 
 Here's the start of a real report, from a test world with an Applied Energistics setup:
 
