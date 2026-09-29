@@ -186,7 +186,7 @@ final class Reports {
         } catch (ClassNotFoundException e) {
             sb.append("  ComputerCraft not installed\n");
         } catch (NoSuchMethodException e) {
-            sb.append("  not available: needs the ComputerCraft-1.63-fixes jar (fixes-2 or later) with -Dcc.profileSeconds=N\n");
+            sb.append("  not available: needs the LagMonitor-CCProfiler add-on and -Dcc.profileSeconds=N (see the README)\n");
         } catch (Throwable t) {
             sb.append("  unavailable: ").append(t).append('\n');
         }

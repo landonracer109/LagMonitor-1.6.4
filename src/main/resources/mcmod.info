@@ -3,7 +3,7 @@
     "modid": "lagmonitor",
     "name": "Lag Monitor",
     "description": "Server-only profiler: times every server tick, samples what the server is doing, and writes reports for lag spikes, freezes and crashes. Players don't need it.",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "mcversion": "1.6.4",
     "url": "",
     "authors": ["landonracer109"],

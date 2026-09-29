@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.1.0 (2026-09-29)
+
+- **New optional add-on, LagMonitor-CCProfiler:** a report on ComputerCraft 1.63's computer thread
+  (how busy it is, queue waits, dropped events, and the computers using it most), in the server log
+  and in Lag Monitor's reports. Server only. It works with the normal ComputerCraft jar, and only
+  does anything when the server is started with `-Dcc.profileSeconds=N`. See the README.
+
 ## 1.0.0 (2026-09-29)
 
 First version.

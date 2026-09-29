@@ -48,13 +48,11 @@ The report sections are:
   - each mod's tick handlers;
   - packages anywhere in the stack, which is roughly "which mod";
   - the exact methods running.
-- **ComputerCraft:** with the normal ComputerCraft jar, CC's work on the server thread (turtles,
-  monitors, computer blocks) shows up like any other block entity, but CC's own Lua thread isn't
-  covered. That thread doesn't affect TPS: when it's overloaded, computers get slow while the
-  server runs fine. The next release of
-  [ComputerCraft-1.63-fixes](https://github.com/landonracer109/ComputerCraft-1.63-fixes), run with
-  `-Dcc.profileSeconds=N`, adds a report on that thread, which is then included: how busy it is
-  and which computers use it.
+- **ComputerCraft:** CC's work on the server thread (turtles, monitors, computer blocks) shows up
+  like any other block entity. CC's own Lua thread is only covered with the optional
+  [CC Profiler add-on](#optional-computercraft-thread-report): how busy that thread is, and which
+  computers use it. That thread doesn't affect TPS: when it's overloaded, computers get slow while
+  the server runs fine.
 
 Here's the start of a real report, from a test world with an Applied Energistics setup:
 
@@ -101,6 +99,40 @@ Minecraft 1.6.4 has no watchdog, so this is often the only evidence.
    appearing in `lagmonitor/`.
 
 Nothing is needed on clients. It also works in single player, which is useful for testing.
+
+## Optional: ComputerCraft thread report
+
+ComputerCraft 1.63 runs every computer's Lua code on one thread of its own. When that thread is
+overloaded, computers get slow and programs error with "too long without yielding", while TPS stays
+at 20. **LagMonitor-CCProfiler** is a small separate jar that measures it:
+
+1. Put `LagMonitor-CCProfiler-<version>.jar` in the **server's** `mods` folder, next to Lag Monitor.
+   Players don't need it.
+2. Add `-Dcc.profileSeconds=60` to the server's Java arguments, then restart.
+
+Every 60 seconds the server log then gets a `[CC-Profile]` report, and Lag Monitor's reports get a
+"ComputerCraft thread" section:
+
+```
+COMPUTERCRAFT THREAD
+  04:24:26 65s: 3 tasks, thread busy 0.3%, queue wait avg 0.1 ms / max 0 ms, DROPPED (queue full) 0
+    #4                              0.3% of period,     3 tasks, avg  64.19 ms, max   189.3 ms
+```
+
+- **thread busy:** how much of the time the CC thread was running computers. Near 100%, computers
+  wait on each other.
+- **queue wait:** how long events (timers, key presses, turtle results) waited before their
+  computer ran.
+- **dropped:** events thrown away because a computer already had 256 waiting. ComputerCraft does
+  this silently.
+- **per computer:** the computers that used the most time, by ID and label.
+
+How it works: when the server starts with `-Dcc.profileSeconds`, it swaps ComputerCraft's
+`ComputerThread` class for a copy that's the original instruction for instruction, plus timing
+calls ([source](ccprofiler/replacement/dan200/computercraft/core/computer/ComputerThread.java)).
+Scheduling is unchanged. It only does this for the exact ComputerCraft 1.63 classes it was written
+for (checked by SHA-256, the ones in TechIt-ng's jar). Any other version is left alone, with a line
+in the log. Without the Java argument, it changes nothing at all.
 
 ## Commands
 
@@ -241,6 +273,18 @@ Tested on a **dedicated server**: the pack's server-side mods on Forge 9.11.1.96
 It also caught a real 416 ms spike there: a zombie's wander AI pathfinding into an unloaded area,
 which made the server generate a new chunk in the middle of the tick.
 
+**CC Profiler add-on:**
+- On the dedicated server: with a ComputerCraft jar other than the one it was made for, it logged
+  "not installed" and left ComputerCraft alone. With TechIt-ng's jar it installed, and the
+  `[CC-Profile]` report appeared in the log and in Lag Monitor's reports.
+- Headless, with 24 real ComputerCraft computers (the jar's own Lua, BIOS and ROM) each asking for
+  20 events a second, 30 s per run: the same throughput with and without it (318 and 319 events a
+  second) and every computer's result correct in both. It reported the thread 99.7% busy, which is
+  right for that load.
+- Headless, with one computer that never yields (it even catches the first abort) next to 7 normal
+  ones: in both, that computer was shut down after the original's 5 + 1.25 + 1.25 s and the other 7
+  finished correctly. The report named it: 93.7% of the thread, one task of 7,504 ms, "1 timed out".
+
 ## Building
 
 `./build.sh` builds `build/LagMonitor-<version>.jar` with Java 8. It needs three jars in `tools/`,
@@ -253,6 +297,11 @@ To make the last two, remap the vanilla and Forge jars with
 [SpecialSource](https://github.com/md-5/SpecialSource) and `joined.srg` from Forge's
 `deobfuscation_data-1.6.4.lzma`. The same setup is used by
 [ComputerCraft-1.63-fixes](https://github.com/landonracer109/ComputerCraft-1.63-fixes/blob/main/BUILDING.md).
+
+The CC Profiler add-on (`build/LagMonitor-CCProfiler-<version>.jar`) is built too when `tools/`
+also has:
+- **`launchwrapper-1.8.jar`:** Minecraft's launcher library (`net.minecraft:launchwrapper:1.8`).
+- **`ComputerCraft1.63+tomo1.jar`:** the ComputerCraft jar from TechIt-ng.
 
 ## License
 
