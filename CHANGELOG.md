@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.2.0 (2026-09-29)
+
+- **Player section in the reports:** each player's ping as the server measures it, and the packets
+  and bytes waiting to be sent to them.
+- **Fixed:** when a tick crashed, the crashed server waiting for `stop` was reported as a freeze
+  (with thread dumps every 30 s) and sampled as a tick. It's now logged once, like a crash outside
+  a tick already was.
+- **Tested on Cauldron.** Note: Cauldron can't run mod commands sent over RCON (its own bug); use
+  them in game or in the console.
+- The CC Profiler add-on is unchanged.
+
 ## 1.1.0 (2026-09-29)
 
 - **New optional add-on, LagMonitor-CCProfiler:** a report on ComputerCraft 1.63's computer thread

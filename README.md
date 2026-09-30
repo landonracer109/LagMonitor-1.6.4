@@ -39,6 +39,9 @@ The report sections are:
 - **Memory:** heap use and garbage-collection runs. A long "MarkSweep" collection freezes the whole
   server.
 - **Worlds:** players online, and loaded chunks, entities and block entities per dimension.
+- **Players:** each player's ping as the server measures it, and how many packets and bytes are
+  waiting to be sent to them. A big send queue means the server sends more than the connection
+  takes. If the ping here is low but a player sees a high ping, the delay is on their side.
 - **Where the tick time went:** what the server thread was doing each time it was sampled, split
   into:
   - parts of the tick: block entities, entities, scheduled block updates, chunk loading, chunk
@@ -146,7 +149,9 @@ For server operators only (permission level 3):
 | `/lagmonitor simulate crash` | **test only:** crashes the server on the next tick, to check that the crash snapshot is written and uploaded. |
 
 The `simulate` commands only work with `general.allowTestCommands=true`, which is off by default.
-All commands also work from the server console and RCON.
+All commands also work from the server console and RCON. On **Cauldron**, mod commands sent over
+RCON fail with a `ClassCastException` inside Cauldron (Forge's own `/forge tps` does too); use them
+in game or in the server console instead.
 
 ## Configuration (`config/lagmonitor.cfg`)
 
@@ -272,6 +277,12 @@ Tested on a **dedicated server**: the pack's server-side mods on Forge 9.11.1.96
 
 It also caught a real 416 ms spike there: a zombie's wander AI pathfinding into an unloaded area,
 which made the server generate a new chunk in the middle of the tick.
+
+Also tested on **Cauldron** (Cauldron-MCPC-Plus 1.6.4-1.965.21.189), with a real late-game Tekkit
+world: about 31,000 block entities loaded, TPS around 8 to 10. Lag Monitor, the CC Profiler add-on,
+the reports and the uploads all work the same as on Forge. There, a tick that crashed was logged
+once as a crash, not reported as a freeze, and the player section showed a ping of 11 to 24 ms
+with empty send queues while the player's own client showed over 1,000 ms.
 
 **CC Profiler add-on:**
 - On the dedicated server: with a ComputerCraft jar other than the one it was made for, it logged

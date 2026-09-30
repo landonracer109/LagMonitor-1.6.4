@@ -101,6 +101,74 @@ final class Reports {
         return sb.toString();
     }
 
+    /**
+     * Each player's ping (Minecraft's own keep-alive measurement: the round trip through both
+     * sides' packet queues, not a network ping) and how much is waiting to be sent to them. A
+     * large send queue means the server sends more than the connection takes, and everything,
+     * including the keep-alive, waits behind it.
+     */
+    /** TcpConnection's queues (SRG name → what it holds). */
+    private static final java.util.Map<String, String> CONNECTION_FIELDS = new java.util.HashMap<String, String>();
+    static {
+        CONNECTION_FIELDS.put("field_74473_o", "received packets waiting");
+        CONNECTION_FIELDS.put("field_74487_p", "packets waiting to send");
+        CONNECTION_FIELDS.put("field_74486_q", "chunk packets waiting to send");
+        CONNECTION_FIELDS.put("field_74468_e", "bytes waiting to send");
+    }
+
+    static String playersText(Object[] worlds) {
+        StringBuilder sb = new StringBuilder();
+        try {
+            for (Object world : worlds) {
+                java.util.List<?> players = (java.util.List<?>) field(world, "field_73010_i");
+                for (Object p : players) {
+                    String name = String.valueOf(p.getClass().getMethod("func_70005_c_").invoke(p));
+                    Object ping = field(p, "field_71138_i");
+                    sb.append("  player ").append(name).append(": ping ").append(ping).append(" ms");
+                    Object handler = field(p, "field_71135_a");
+                    Object net = handler == null ? null : field(handler, "field_72575_b");
+                    if (net != null) {
+                        for (Class<?> c = net.getClass(); c != null && c != Object.class; c = c.getSuperclass()) {
+                            for (java.lang.reflect.Field f : c.getDeclaredFields()) {
+                                if (java.lang.reflect.Modifier.isStatic(f.getModifiers())) {
+                                    continue;
+                                }
+                                f.setAccessible(true);
+                                Object v = f.get(net);
+                                String label = CONNECTION_FIELDS.get(f.getName());
+                                if (label == null) {
+                                    continue;
+                                }
+                                if (v instanceof java.util.Collection) {
+                                    sb.append(", ").append(label).append(' ').append(((java.util.Collection<?>) v).size());
+                                } else if (v instanceof Integer) {
+                                    sb.append(", ").append(label).append(' ').append(v);
+                                }
+                            }
+                        }
+                    }
+                    sb.append('\n');
+                }
+            }
+        } catch (Throwable t) {
+            sb.append("  player details unavailable: ").append(t).append('\n');
+        }
+        return sb.toString();
+    }
+
+    private static Object field(Object o, String name) throws Exception {
+        for (Class<?> c = o.getClass(); c != null; c = c.getSuperclass()) {
+            try {
+                java.lang.reflect.Field f = c.getDeclaredField(name);
+                f.setAccessible(true);
+                return f.get(o);
+            } catch (NoSuchFieldException e) {
+                // try the superclass
+            }
+        }
+        throw new NoSuchFieldException(name);
+    }
+
     /** Players, and loaded chunks, entities and block entities per dimension (read without stopping the server). */
     private static String worldText() {
         StringBuilder sb = new StringBuilder("WORLDS\n");
@@ -118,6 +186,7 @@ final class Reports {
                     .append(", block entities ").append(listSize(world, "field_73009_h"))
                     .append(", players ").append(listSize(world, "field_73010_i")).append('\n');
             }
+            sb.append(playersText(worlds));
         } catch (Throwable t) {
             sb.append("  unavailable: ").append(t).append('\n');
         }

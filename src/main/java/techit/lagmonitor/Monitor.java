@@ -243,6 +243,12 @@ final class Monitor {
                 if (server != null && inTick) {
                     long tick = tickNumber;
                     StackTraceElement[] st = server.getStackTrace();
+                    if (isWaitingAfterCrash(st)) {
+                        // A tick crashed: it never ends, so this still looks like a tick in progress.
+                        // Neither a sample nor a freeze; the crash report says what happened.
+                        logCrashWaitOnce();
+                        continue;
+                    }
                     if (inTick && tick == tickNumber && st.length > 0) {
                         Classify.classify(st, result);
                         synchronized (this) {
@@ -333,10 +339,7 @@ final class Monitor {
         if (isWaitingAfterCrash(st)) {
             // After a crash the dedicated server keeps running, waiting for "stop" on the console
             // (finalTick). That isn't a stall; the crash report already says what happened.
-            if (!crashWaitLogged) {
-                crashWaitLogged = true;
-                log("the server has crashed and is waiting to be stopped (type stop in the console, or restart it)");
-            }
+            logCrashWaitOnce();
             return;
         }
         if (isIdleInMainLoop(st)) {
@@ -373,6 +376,13 @@ final class Monitor {
     }
 
     /** The server thread sleeping in MinecraftServer.run between ticks (what a paused single-player game does). */
+    private void logCrashWaitOnce() {
+        if (!crashWaitLogged) {
+            crashWaitLogged = true;
+            log("the server has crashed and is waiting to be stopped (type stop in the console, or restart it)");
+        }
+    }
+
     /** The server thread is in MinecraftServer.finalTick, where a crashed server waits to be stopped. */
     private static boolean isWaitingAfterCrash(StackTraceElement[] st) {
         for (StackTraceElement e : st) {
